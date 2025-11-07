@@ -1,0 +1,20 @@
+{
+  "name": "graph-indexer",
+  "version": "1.0.0",
+  "description": "Syncs Postgres graph-service data to Neo4j",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js",
+    "backfill": "node scripts/backfill-outbox.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "neo4j-driver": "^5.20.0",
+    "pg": "^8.16.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
+
