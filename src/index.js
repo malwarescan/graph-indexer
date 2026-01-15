@@ -7,9 +7,14 @@ const crypto = require("crypto");
 const { URL: NodeURL } = require("url");
 
 // ===== Config =====
+console.log("Environment variables check:");
+console.log("DATABASE_URL:", process.env.DATABASE_URL ? "SET" : "NOT SET");
+console.log("NEO4J_URI:", process.env.NEO4J_URI ? "SET" : "NOT SET");
+
 const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl) {
-  console.error("DATABASE_URL environment variable is required");
+if (!databaseUrl || databaseUrl.includes('<same value')) {
+  console.error("DATABASE_URL is not properly configured in Railway");
+  console.error("Current value:", databaseUrl);
   process.exit(1);
 }
 const dbUrl = new NodeURL(databaseUrl);
