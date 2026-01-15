@@ -7,7 +7,12 @@ const crypto = require("crypto");
 const { URL: NodeURL } = require("url");
 
 // ===== Config =====
-const dbUrl = new NodeURL(process.env.DATABASE_URL || "");
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  console.error("DATABASE_URL environment variable is required");
+  process.exit(1);
+}
+const dbUrl = new NodeURL(databaseUrl);
 const useInternal = dbUrl.hostname.endsWith("railway.internal");
 const sslSetting = useInternal ? false : { rejectUnauthorized: false };
 
