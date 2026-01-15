@@ -48,6 +48,20 @@ Syncs triples and factlets from Postgres (graph-service) to Neo4j for downstream
 - **Relationships:** `(:Entity)-[:ASSERTS {predicate}]->(:Entity)`
 - **Factlets:** `(:Factlet {id, fact_id, claim})-[:FROM_PAGE]->(:WebPage {id, url})`
 
+### Pattern B (Source Tracking - New)
+
+- **Source Domains:** `(:SourceDomain {id, name})`
+- **Source Participation:** `(:SourceParticipation {id, ai_readable_source, markdown_discovered, discovery_method, first_observed, last_verified})`
+- **Relationships:** 
+  - `(:SourceDomain)-[:HAS_PARTICIPATION]->(:SourceParticipation)`
+  - `(:SourceParticipation)-[:TRACKS_CROUTON]->(:Crouton {id})`
+
+### Event Types
+
+- `triple.insert`: Entity relationships (Pattern A)
+- `factlet.insert`: Factlet to webpage links (Pattern A)  
+- `source_participation.insert`: AI-readable source tracking (Pattern B)
+
 ## Verification
 
 ```bash

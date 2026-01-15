@@ -116,6 +116,63 @@ async function processFactlet(session, ev) {
   });
 }
 
+// ===== Process source_participation.insert event =====
+async function processSourceParticipation(session, ev) {
+  const { 
+    crouton_id, 
+    source_domain, 
+    source_url, 
+    ai_readable_source, 
+    markdown_discovered, 
+    discovery_method, 
+    first_observed, 
+    last_verified 
+  } = ev.payload;
+  
+  if (!crouton_id || !source_domain || !source_url) {
+    throw new Error("Missing required source participation fields");
+  }
+
+  const participationId = sha256(`${crouton_id}:${source_url}`);
+  const domainId = sha256(source_domain);
+  const now = first_observed || new Date().toISOString();
+
+  // Create SourceDomain, Crouton, and SourceParticipation nodes with relationships
+  const cypher = `
+    MERGE (sd:SourceDomain {id: $domainId})
+      ON CREATE SET sd.name = $sourceDomain, sd.created_at = $now
+    MERGE (c:Crouton {id: $croutonId})
+      ON CREATE SET c.created_at = $now
+    MERGE (sp:SourceParticipation {id: $participationId})
+      ON CREATE SET 
+        sp.ai_readable_source = $aiReadableSource,
+        sp.markdown_discovered = $markdownDiscovered,
+        sp.discovery_method = $discoveryMethod,
+        sp.first_observed = $firstObserved,
+        sp.last_verified = $lastVerified,
+        sp.created_at = $now
+      ON MATCH SET 
+        sp.last_verified = $lastVerified,
+        sp.updated_at = $now
+    MERGE (sd)-[:HAS_PARTICIPATION]->(sp)
+    MERGE (sp)-[:TRACKS_CROUTON]->(c)
+    RETURN id(sp) as participation_id, id(sd) as domain_id, id(c) as crouton_id
+  `;
+
+  await session.run(cypher, {
+    participationId,
+    domainId,
+    croutonId: crouton_id,
+    sourceDomain: source_domain,
+    aiReadableSource: ai_readable_source || false,
+    markdownDiscovered: markdown_discovered || false,
+    discoveryMethod: discovery_method || 'unknown',
+    firstObserved: first_observed || now,
+    lastVerified: last_verified || now,
+    now,
+  });
+}
+
 // ===== Main worker loop =====
 async function worker() {
   console.log(`[indexer] Starting worker (batch_size=${BATCH_SIZE}, poll_interval=${POLL_INTERVAL_MS}ms)`);
@@ -144,6 +201,8 @@ async function worker() {
               await processTriple(session, ev);
             } else if (ev.event_type === "factlet.insert") {
               await processFactlet(session, ev);
+            } else if (ev.event_type === "source_participation.insert") {
+              await processSourceParticipation(session, ev);
             } else {
               console.warn(`[indexer] Unknown event_type: ${ev.event_type}`);
             }
